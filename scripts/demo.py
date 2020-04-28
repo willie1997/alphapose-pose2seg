@@ -111,6 +111,7 @@ def get_kp(all_results):
                 keypoints.append(float(kp_preds[n, 1]))
                 keypoints.append(float(kp_scores[n]))
             kp = np.array(keypoints).reshape(17,3)
+            kp[(np.where(kp[:,2]<0.8)), 2] = 0.
             output.append(kp)
     return np.array(output)
 
@@ -186,13 +187,16 @@ if __name__ == "__main__":
             # det_loader.clear_queues()
     final_result = writer.results()
     output_kp = get_kp(final_result)
+
+
     model_path = './pretrained_models/pose2seg_release.pkl'
     print('===========> loading model <===========')
     model = Pose2Seg().cuda()
     model.init(model_path)
     model.eval() 
     print("Results have been written to json.")
-    img_path = './inpimgs/2.jpg'
+    
+    img_path = './inpimgs/392.jpg'
     imgs = cv2.imread(img_path)
     output = model([imgs], [output_kp])
     ids = 0 
@@ -200,7 +204,8 @@ if __name__ == "__main__":
         
         # maskencode = maskUtils.encode(np.asfortranarray(mask))
         temp = np.zeros(imgs.shape)
-        temp[np.where(mask!=0)] = imgs[np.where(mask!=0)]
+        one = np.ones(imgs.shape) * 255
+        temp[np.where(mask!=0)] = one[np.where(mask!=0)]
         # cv2.imshow('mask', temp/255.)
         # cv2.waitKey()
         cv2.imwrite('mask_%d.jpg'%(ids), temp)
